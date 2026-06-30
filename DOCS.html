@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaThip (test) — เอกสารเชิงลึก</title>
+<style>
+:root{--bg:#f5f4f0;--card:#fff;--cream:#f1eee4;--ink:#1b1b1b;--mut:#86877f;
+--line:#e8e8e3;--blue:#2f6fed;--green:#3fa66a;--red:#d9534f;--amber:#b07d12;--purple:#7c4dff;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+font-family:"Leelawadee UI","Segoe UI","Sarabun",system-ui,sans-serif;line-height:1.65}
+.layout{display:flex;max-width:1180px;margin:0 auto}
+.toc{position:sticky;top:0;align-self:flex-start;width:220px;height:100vh;overflow:auto;padding:28px 14px;font-size:13.5px;border-right:1px solid var(--line)}
+.toc a{display:block;color:var(--mut);text-decoration:none;padding:5px 8px;border-radius:7px}
+.toc a:hover{background:#fff;color:var(--ink)}
+.toc .h{font-weight:800;color:var(--ink);margin:14px 8px 4px;font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+.wrap{flex:1;min-width:0;padding:34px 30px 90px}
+h1{font-size:30px;margin:0 0 4px}
+h2{font-size:22px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--line);scroll-margin-top:20px}
+h3{font-size:16px;color:var(--blue);margin:22px 0 6px}
+.sub{color:var(--mut);font-size:15px;margin-bottom:10px}
+.tag{display:inline-block;background:#fff;border:1px solid var(--line);border-radius:20px;padding:3px 12px;font-size:13px;margin:3px 4px 3px 0;color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:12px 0}
+table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13.5px}
+th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+th{background:#faf9f5;color:#444}td.c{text-align:center}
+code{background:#efeee9;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12.5px;color:#a0408a}
+pre{background:#1b1b1b;color:#eaeaea;border-radius:10px;padding:14px 16px;overflow:auto;font-size:12.5px;line-height:1.55}
+pre .c{color:#7d8590}pre .k{color:#ff7b72}pre .s{color:#a5d6ff}pre .f{color:#d2a8ff}
+ul{margin:6px 0;padding-left:20px}li{margin:4px 0}
+.muted{color:var(--mut);font-size:13px}
+.hl{background:#eef3ff;border-left:3px solid var(--blue);padding:12px 16px;border-radius:0 8px 8px 0;margin:12px 0}
+.warn{background:#fbf3e0;border-left:3px solid var(--amber);padding:12px 16px;border-radius:0 8px 8px 0;margin:12px 0}
+.ok{background:#e9f7ef;border-left:3px solid var(--green);padding:12px 16px;border-radius:0 8px 8px 0;margin:12px 0}
+.pill{font-size:11px;padding:2px 8px;border-radius:6px;font-weight:700}
+.done{background:#e5f5ec;color:var(--green);border:1px solid var(--green)}
+.pend{background:#fbf0d8;color:var(--amber);border:1px solid var(--amber)}
+.arch{background:#1b1b1b;color:#eee;border-radius:12px;padding:18px;font-size:13px;line-height:1.85;overflow:auto}
+.arch b{color:#9ecbff}.arch .g{color:#888}.arch .y{color:#ffd97a}.arch .p{color:#d2a8ff}
+.flow{display:flex;gap:0;flex-wrap:wrap;margin:14px 0}
+.fstep{flex:1;min-width:120px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;position:relative;margin:6px 16px 6px 0}
+.fstep .n{width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;margin-bottom:6px}
+.fstep .t{font-weight:700;font-size:13px}.fstep .d{color:var(--mut);font-size:11.5px;margin-top:2px}
+.fstep::after{content:"→";position:absolute;right:-14px;top:50%;transform:translateY(-50%);color:#c9c7bd;font-weight:800}
+.fstep:last-child::after{display:none}
+.kv{display:flex;gap:8px;font-size:13.5px;margin:3px 0}.kv b{min-width:130px;color:var(--mut);font-weight:600}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="toc">
+  <div class="h">TaThip · test</div>
+  <a href="#intro">1. ภาพรวม</a>
+  <a href="#arch">2. สถาปัตยกรรม</a>
+  <a href="#files">3. โครงไฟล์</a>
+  <a href="#bridge">4. สะพาน JS↔Python</a>
+  <a href="#db">5. Database (SQLite)</a>
+  <a href="#api">6. Python API</a>
+  <a href="#ocr">7. OCR จริง</a>
+  <a href="#front">8. Front-end data layer</a>
+  <a href="#addcam">9. Flow เพิ่มกล้อง</a>
+  <a href="#settings">10. ตั้งค่า/ลบกล้อง</a>
+  <a href="#search">11. ค้นหา &amp; Visualize</a>
+  <a href="#realmock">12. จริง vs รอทำ</a>
+  <a href="#run">13. วิธีรัน</a>
+</nav>
+<div class="wrap">
+
+<h1>TaThip (test) — เอกสารเชิงลึก</h1>
+<div class="sub">เวอร์ชันทดสอบที่ต่อ <b>SQLite + OCR จริง + จัดการกล้อง</b> ครบ — อธิบายทุกชิ้นส่วนแบบละเอียด</div>
+<div>
+<span class="tag">Desktop App</span><span class="tag">pywebview</span><span class="tag">SQLite</span>
+<span class="tag">EasyOCR</span><span class="tag">OpenCV</span><span class="tag">Leaflet</span>
+</div>
+
+<!-- 1 -->
+<h2 id="intro">1 · ภาพรวม</h2>
+<p><code>test/</code> คือสำเนาของแอปที่ <b>ต่อ backend จริง</b> เพื่อทดลองฟีเจอร์ "เพิ่มกล้อง" ให้ใช้งานได้จริง
+แยกอิสระจาก <code>app/</code> (ตัวสะอาดสำหรับ GitHub) — แก้ใน test ไม่กระทบ app</p>
+<div class="card">
+<div class="kv"><b>เป็นแอปแบบ</b> Desktop (หน้าต่าง native) เปิด UI ที่เป็น HTML/JS ภายใน</div>
+<div class="kv"><b>ภาษา</b> Python (backend) + HTML/CSS/JS (frontend) คุยกันผ่าน pywebview bridge</div>
+<div class="kv"><b>เก็บข้อมูล</b> SQLite ไฟล์เดียว <code>tathip.db</code> (กล้อง + เส้นทางที่บันทึก)</div>
+<div class="kv"><b>ทำงานได้จริง</b> เลือกไฟล์วิดีโอ · ดึงเฟรม · OCR เวลา · วาด ROI · CRUD กล้อง · บันทึกเส้นทางถาวร</div>
+</div>
+
+<!-- 2 -->
+<h2 id="arch">2 · สถาปัตยกรรม</h2>
+<div class="arch">
+┌────────────────────────────────────────────────────────────┐<br>
+│  <b>หน้าต่าง Desktop</b> (pywebview + Edge WebView2 บน Windows)        │<br>
+│                                                              │<br>
+│   <b>index.html</b>  <span class="g">— UI ทั้งหมด (HTML/CSS/JS, Leaflet)</span>           │<br>
+│       │  เรียกผ่าน  <span class="y">window.pywebview.api.&lt;method&gt;()</span>  <span class="g">(async)</span>   │<br>
+│       ▼                                                      │<br>
+│   <b>app.py · class Api</b>  <span class="g">— Python (รันในโปรเซสเดียวกัน)</span>          │<br>
+│       ├─ <span class="p">choose_video / first_frame</span>   <span class="g">OpenCV</span>                │<br>
+│       ├─ <span class="p">read_timestamp</span>               <span class="g">EasyOCR + regex</span>          │<br>
+│       └─ <span class="p">get_state / add / update / delete / save_path</span>  <span class="g">SQLite</span> │<br>
+│                              │                               │<br>
+│                              ▼                               │<br>
+│                       <b>tathip.db</b> <span class="g">(SQLite: cameras, saved_paths)</span>   │<br>
+└────────────────────────────────────────────────────────────┘<br>
+<span class="g">วิดีโอ/AI pipeline = ภายนอก (อ้างอิง path) — ไม่ฝังในแอป</span>
+</div>
+<div class="hl"><b>หัวใจ:</b> ทุกอย่างรันในโปรเซสเดียว — JS เรียกฟังก์ชัน Python ได้ตรงๆ ผ่าน bridge
+ทำให้ใช้ OpenCV/EasyOCR/SQLite (ของ Python) จากปุ่มบนหน้าเว็บได้เลย</div>
+
+<!-- 3 -->
+<h2 id="files">3 · โครงไฟล์</h2>
+<table>
+<tr><th>ไฟล์</th><th>หน้าที่</th></tr>
+<tr><td><code>app.py</code></td><td>ตัวเปิดหน้าต่าง + <b>class Api</b> (วิดีโอ/OCR/DB) + init DB</td></tr>
+<tr><td><code>index.html</code></td><td>UI: หน้าแรก · ค้นหา&amp;ติดตาม · visualize · เส้นทางที่บันทึก · จัดการกล้อง · wizard เพิ่มกล้อง</td></tr>
+<tr><td><code>tracks_data.js</code></td><td><code>window.TDATA</code> = ผลรถที่ตรวจพบ (จาก pipeline) — เริ่มต้นว่าง</td></tr>
+<tr><td><code>route.js</code></td><td><code>window.ROUTES</code> = geometry เส้นทางถนนระหว่างกล้อง</td></tr>
+<tr><td><code>tathip.db</code></td><td>SQLite (สร้างอัตโนมัติเมื่อรัน) — กล้อง + เส้นทางที่บันทึก</td></tr>
+<tr><td><code>img/</code></td><td>ภาพตัวอย่างเฟรม (fallback ตอนเปิดในเบราว์เซอร์)</td></tr>
+<tr><td><code>requirements.txt</code></td><td>pywebview · opencv-python · numpy · easyocr</td></tr>
+</table>
+
+<!-- 4 -->
+<h2 id="bridge">4 · สะพาน JS ↔ Python (pywebview)</h2>
+<p>ตอนสร้างหน้าต่าง เราผูก object Python เข้ากับ JS:</p>
+<pre><span class="c"># app.py</span>
+webview.create_window("TaThip ...", INDEX, <span class="f">js_api</span>=Api(), width=1340, height=900)
+webview.start()</pre>
+<p>ฝั่ง JS ทุกเมธอดของ <code>Api</code> จะโผล่ใต้ <code>window.pywebview.api</code> และคืนค่าเป็น <b>Promise</b>:</p>
+<pre><span class="c">// index.html</span>
+<span class="k">const</span> api = () => (window.pywebview && window.pywebview.api) || <span class="k">null</span>;
+<span class="k">const</span> info = <span class="k">await</span> api().choose_video();      <span class="c">// เปิด dialog เลือกไฟล์</span>
+<span class="k">const</span> r    = <span class="k">await</span> api().read_timestamp(path);  <span class="c">// OCR</span></pre>
+<div class="ok"><b>Fallback เบราว์เซอร์:</b> ถ้าเปิด <code>index.html</code> ตรงๆ (ไม่มี pywebview) → <code>api()</code> คืน <code>null</code>
+โค้ดจะสลับไปใช้ mock/in-memory อัตโนมัติ → UI ยังเล่นได้ แค่ไม่เลือกไฟล์จริง/ไม่เก็บถาวร</div>
+<p>ตอนแอปพร้อม pywebview จะยิง event <code>pywebviewready</code> เราจึงโหลดข้อมูลจาก DB ตอนนั้น:</p>
+<pre><span class="k">if</span>(window.pywebview && window.pywebview.api){ loadState(); }
+<span class="k">else</span>{ window.addEventListener(<span class="s">"pywebviewready"</span>, loadState); }</pre>
+
+<!-- 5 -->
+<h2 id="db">5 · Database (SQLite)</h2>
+<p>ไฟล์เดียว <code>tathip.db</code> สร้างอัตโนมัติด้วย <code>init_db()</code> · 2 ตาราง:</p>
+<pre><span class="k">CREATE TABLE</span> cameras(
+  id <span class="k">TEXT PRIMARY KEY</span>, name, lat <span class="k">REAL</span>, lon <span class="k">REAL</span>,
+  video_path, start_time, roi, ts_box, created);   <span class="c">-- roi/ts_box เก็บเป็น JSON string</span>
+
+<span class="k">CREATE TABLE</span> saved_paths(
+  id <span class="k">TEXT PRIMARY KEY</span>, name, note, created, sel);  <span class="c">-- sel = JSON ของผลการสืบทั้งชุด</span></pre>
+<table>
+<tr><th>คอลัมน์สำคัญ</th><th>เก็บอะไร</th></tr>
+<tr><td><code>cameras.roi</code></td><td>พิกัดมุมโซน ROI (สัดส่วน 0–1) เป็น JSON เช่น <code>[[0.1,0.4],...]</code></td></tr>
+<tr><td><code>cameras.start_time</code></td><td>เวลาเริ่มคลิป (จาก OCR หรือกรอกเอง) — ใช้ sync เวลาข้ามกล้อง</td></tr>
+<tr><td><code>cameras.video_path</code></td><td>path วิดีโอ (อ้างอิง ไม่คัดลอกไฟล์)</td></tr>
+<tr><td><code>saved_paths.sel</code></td><td>JSON: รถเป้าหมาย + track ที่ติ๊ก → เปิดดูซ้ำได้ครบ</td></tr>
+</table>
+<div class="hl">ROI/sel เป็นโครงซ้อน → เก็บเป็น <b>JSON string</b> ในคอลัมน์เดียว แล้ว <code>json.loads</code> ตอนอ่าน (เหมาะกับข้อมูลกึ่งโครงสร้าง ไม่ต้องแตกหลายตาราง)</div>
+
+<!-- 6 -->
+<h2 id="api">6 · Python API (class Api)</h2>
+<table>
+<tr><th>เมธอด</th><th>อาร์กิวเมนต์</th><th>คืนค่า</th><th>ใช้ตอน</th></tr>
+<tr><td><code>choose_video()</code></td><td>—</td><td>{path,name,fps,duration,res,size_gb}</td><td>เลือกไฟล์ (ขั้น 1)</td></tr>
+<tr><td><code>first_frame(path)</code></td><td>path</td><td>data URL (base64 jpg)</td><td>โชว์เฟรมวาด ROI</td></tr>
+<tr><td><code>read_timestamp(path)</code></td><td>path</td><td>{ok,datetime,box}</td><td>OCR เวลา (ขั้น 4)</td></tr>
+<tr><td><code>get_state()</code></td><td>—</td><td>{cameras[],saved_paths[]}</td><td>โหลดตอนเปิดแอป</td></tr>
+<tr><td><code>add_camera(cam)</code></td><td>dict</td><td>id</td><td>เซฟกล้องใหม่</td></tr>
+<tr><td><code>update_camera(id,fields)</code></td><td>id, dict</td><td>true</td><td>แก้ไขกล้อง</td></tr>
+<tr><td><code>delete_camera(id)</code></td><td>id</td><td>true</td><td>ลบกล้อง</td></tr>
+<tr><td><code>save_path(p)</code> / <code>delete_path(id)</code></td><td>dict / id</td><td>id / true</td><td>เส้นทางที่บันทึก</td></tr>
+</table>
+<div class="muted">ทุกเมธอดเปิด connection ใหม่ต่อครั้ง (<code>with db() as c</code>) → ปลอดภัยเรื่อง thread ของ pywebview</div>
+
+<!-- 7 -->
+<h2 id="ocr">7 · OCR จริง (read_timestamp)</h2>
+<p>อ่าน timestamp ที่ฝังในคลิป (เช่น <code>2026/04/05 07:14:55</code>) แบบ 6 ขั้น:</p>
+<div class="flow">
+<div class="fstep"><div class="n">1</div><div class="t">ดึงเฟรม</div><div class="d">cv2 อ่านเฟรมที่ ~เฟรม 30</div></div>
+<div class="fstep"><div class="n">2</div><div class="t">crop มุมบนซ้าย</div><div class="d">50%กว้าง × 13%สูง</div></div>
+<div class="fstep"><div class="n">3</div><div class="t">ขยาย 2×</div><div class="d">ตัวเล็ก→อ่านชัดขึ้น</div></div>
+<div class="fstep"><div class="n">4</div><div class="t">EasyOCR</div><div class="d">allowlist=ตัวเลข/:./-</div></div>
+<div class="fstep"><div class="n">5</div><div class="t">regex ยืดหยุ่น</div><div class="d">anchor ปี 20xx</div></div>
+<div class="fstep"><div class="n">6</div><div class="t">ตรวจช่วงค่า</div><div class="d">เดือน1-12, วิ&lt;60…</div></div>
+</div>
+<pre><span class="c"># regex: ยอมให้ตัวคั่นเป็นอะไรก็ได้/หาย (OCR มักอ่าน ":" หลุด)</span>
+TS_RE = r"(20\d{2})\D{0,2}(\d{2})\D{0,2}(\d{2})\D{0,4}(\d{2})\D{0,2}(\d{2})\D{0,2}(\d{2})"
+
+<span class="k">for</span> m <span class="k">in</span> TS_RE.finditer(joined):        <span class="c"># หาคู่แรกที่ "สมเหตุผล"</span>
+    y,mo,d,hh,mm,ss = map(int, m.groups())
+    <span class="k">if</span> 1&lt;=mo&lt;=12 <span class="k">and</span> 1&lt;=d&lt;=31 <span class="k">and</span> hh&lt;24 <span class="k">and</span> mm&lt;60 <span class="k">and</span> ss&lt;60: ...</pre>
+<table>
+<tr><th>กล้อง</th><th>ผล OCR จริง</th><th class="c">สถานะ</th></tr>
+<tr><td>cam10</td><td>2026/04/05 07:14:55 (ตรงเป๊ะ)</td><td class="c"><span class="pill done">อ่านได้</span></td></tr>
+<tr><td>cam13</td><td>2026/04/05 07:30:xx</td><td class="c"><span class="pill done">อ่านได้</span></td></tr>
+<tr><td>cam12</td><td>วินาทีเพี้ยน → ช่องให้กรอกเอง</td><td class="c"><span class="pill pend">fallback</span></td></tr>
+</table>
+<div class="warn"><b>ทำไมต้องมี fallback:</b> overlay บางกล้องฟอนต์/เรนเดอร์ทำให้ OCR อ่านวินาทีเพี้ยน
+→ ช่องเวลาในหน้า wizard <b>แก้เองได้</b> เสมอ กัน cross-camera เพี้ยนเงียบ · คืน <code>box</code> มาวาดกรอบเหลืองบนเฟรมให้เห็นด้วย</div>
+
+<!-- 8 -->
+<h2 id="front">8 · Front-end data layer</h2>
+<p>แยกข้อมูล 2 แหล่งให้ชัด:</p>
+<table>
+<tr><th>ตัวแปร</th><th>มาจาก</th><th>ใช้กับ</th></tr>
+<tr><td><code>CAMERAS</code></td><td><b>DB</b> (get_state)</td><td>sidebar · ตารางกล้อง · มินิแมป · KPI · ตั้งค่า/ลบ</td></tr>
+<tr><td><code>TDATA.tracks</code> / <code>CAMS</code></td><td><b>pipeline</b> (tracks_data.js)</td><td>ค้นหา (Re-ID) · visualize · filter</td></tr>
+<tr><td><code>savedPaths</code></td><td><b>DB</b></td><td>หน้าเส้นทางที่บันทึก</td></tr>
+</table>
+<pre><span class="c">// โหลดจาก DB เมื่อแอปพร้อม แล้ว re-render</span>
+<span class="k">async function</span> loadState(){
+  <span class="k">const</span> s = <span class="k">await</span> api().get_state();
+  CAMERAS    = s.cameras;
+  savedPaths = s.saved_paths;
+  renderSideCams(); renderCamTable(); dash();
+}</pre>
+<div class="hl"><b>ทำไมแยก 2 แหล่ง:</b> "กล้องที่ลงทะเบียน" (ผู้ใช้เพิ่ม) กับ "ผลรถที่ตรวจพบ" (pipeline ผลิต) เป็นคนละเรื่อง —
+แยกแล้วจัดการกล้องได้โดยไม่ต้องรอ pipeline และ pipeline เติม tracks ทีหลังได้อิสระ</div>
+
+<!-- 9 -->
+<h2 id="addcam">9 · Flow เพิ่มกล้อง (wizard 5 ขั้น)</h2>
+<div class="flow">
+<div class="fstep"><div class="n">1</div><div class="t">เลือกไฟล์</div><div class="d">choose_video → fps/ขนาด</div></div>
+<div class="fstep"><div class="n">2</div><div class="t">ตั้งชื่อ</div><div class="d"></div></div>
+<div class="fstep"><div class="n">3</div><div class="t">ปักหมุด</div><div class="d">Leaflet → lat/lon</div></div>
+<div class="fstep"><div class="n">4</div><div class="t">เฟรม+OCR+ROI</div><div class="d">first_frame · read_timestamp · วาด polygon</div></div>
+<div class="fstep"><div class="n">5</div><div class="t">ยืนยัน→เซฟ</div><div class="d">add_camera → DB</div></div>
+</div>
+<pre><span class="c">// ขั้น 5: ประกอบ object แล้วเขียน DB</span>
+<span class="k">const</span> cam = {name, lat, lon, video_path: realPath, start_time: ts, roi};
+cam.id = <span class="k">await</span> api().add_camera(cam);   <span class="c">// คืน id เช่น CAM-04088</span>
+CAMERAS.push(cam); renderSideCams(); renderCamTable();</pre>
+<div class="ok">ทุกชิ้นในขั้น 4 <b>เป็นของจริง</b>: เฟรมจริงจากคลิป · OCR จริง · ROI วาดจริง (เก็บพิกัดสัดส่วน) · พิกัดจากแผนที่จริง</div>
+
+<!-- 10 -->
+<h2 id="settings">10 · ตั้งค่า / ลบกล้อง</h2>
+<p>กดปุ่ม "ตั้งค่า" (ใน sidebar หรือตาราง) → เปิด modal แก้ ชื่อ/พิกัด/เวลา หรือลบ:</p>
+<pre>camSettings(id)      <span class="c">// เปิด modal เติมค่าเดิม</span>
+saveCamSettings()    <span class="c">// → api.update_camera(id, fields) + อัปเดต UI</span>
+deleteCam()          <span class="c">// → confirm → api.delete_camera(id) + เอาออกจาก CAMERAS</span></pre>
+<div class="muted">ทั้งหมด sync ทั้ง <b>หน่วยความจำ (UI)</b> และ <b>DB</b> พร้อมกัน → ปิดเปิดแอปใหม่ข้อมูลตรง</div>
+
+<!-- 11 -->
+<h2 id="search">11 · ค้นหา &amp; Visualize</h2>
+<p>ส่วนนี้ทำงานบน <code>TDATA.tracks</code> (จาก pipeline):</p>
+<ul>
+<li><b>เลือกเป้าหมาย</b> → คำนวณ <b>cosine similarity</b> จาก embedding Re-ID จริง (เมื่อมีข้อมูล)</li>
+<li><b>ติ๊กยืนยัน</b> (human-in-the-loop) → <b>Visualize</b>: หมุดกล้อง + เวลา + ลูกศรวิ่งตามลำดับ + โหมด Pathway</li>
+<li><b>บันทึกเส้นทาง</b> → <code>save_path</code> ลง DB → เปิดดูซ้ำได้</li>
+</ul>
+<div class="warn">ตอนนี้ <code>tracks_data.js</code> <b>ว่าง</b> → ค้นหายังไม่มีผล จนกว่าจะรัน pipeline (ดูข้อ 12)</div>
+
+<!-- 12 -->
+<h2 id="realmock">12 · จริง vs รอทำ</h2>
+<table>
+<tr><th>ฟีเจอร์</th><th class="c">สถานะ</th><th>หมายเหตุ</th></tr>
+<tr><td>เลือกไฟล์วิดีโอ + อ่าน fps/ขนาด</td><td class="c"><span class="pill done">จริง</span></td><td>OpenCV (เดสก์ท็อป)</td></tr>
+<tr><td>ดึงเฟรมแรกจากคลิป</td><td class="c"><span class="pill done">จริง</span></td><td>cv2</td></tr>
+<tr><td>OCR อ่านเวลา</td><td class="c"><span class="pill done">จริง</span></td><td>EasyOCR + fallback กรอกเอง</td></tr>
+<tr><td>ปักหมุด / วาด ROI</td><td class="c"><span class="pill done">จริง</span></td><td>Leaflet / SVG polygon</td></tr>
+<tr><td>DB เก็บกล้อง/เส้นทางถาวร</td><td class="c"><span class="pill done">จริง</span></td><td>SQLite</td></tr>
+<tr><td>ตั้งค่า / ลบกล้อง</td><td class="c"><span class="pill done">จริง</span></td><td>update/delete + sync DB</td></tr>
+<tr><td>ค้นหา Re-ID (cosine)</td><td class="c"><span class="pill done">โค้ดจริง</span></td><td>รอข้อมูลจาก pipeline</td></tr>
+<tr><td>Pipeline (detect→track→Re-ID)</td><td class="c"><span class="pill pend">รอ model</span></td><td><code>run_pipeline.py</code> พร้อม · รอ <code>best.pt</code> จาก Colab → เชื่อมปุ่ม "ประมวลผล"</td></tr>
+</table>
+
+<!-- 13 -->
+<h2 id="run">13 · วิธีรัน</h2>
+<pre>cd D:\software_engineer\project\TaThip\test
+pip install -r requirements.txt   <span class="c"># ครั้งแรก (easyocr โหลดโมเดลครั้งแรกตอนใช้)</span>
+python app.py</pre>
+<div class="card">
+<b>ทดลอง:</b> จัดการกล้อง → ＋ เพิ่มกล้องใหม่ → เลือก <code>data\videos\cam10.mp4</code>
+→ OCR อ่านเวลาให้อัตโนมัติ → ปักหมุด → วาด ROI → เซฟ →
+<b>ปิดเปิดแอปใหม่ ข้อมูลยังอยู่</b> (อยู่ใน <code>tathip.db</code>) · กดตั้งค่า/ลบได้
+</div>
+
+<div class="muted" style="margin-top:34px;text-align:center">TaThip · test build · เอกสารเชิงลึก · ขอนแก่น</div>
+</div>
+</div>
+</body>
+</html>

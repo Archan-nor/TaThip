@@ -1,0 +1,9 @@
+pywebview>=6
+opencv-python
+numpy
+easyocr
+ultralytics
+torch
+torchvision
+# Re-ID (veri_extractor + veri_sbs_R50-ibn.pth) มาจากโฟลเดอร์ BDI_hackathon
+# ตั้ง path ด้วย env TATHIP_BDI (ดู BDI ใน app.py)

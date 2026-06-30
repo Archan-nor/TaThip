@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# OS
+.DS_Store
+Thumbs.db
+
+# วิดีโอ/ข้อมูลใหญ่ (อย่า commit)
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+# runtime ที่สร้างตอนใช้งาน (ไม่ commit)
+tathip.db
+tracks_store.json
+img/t_*.jpg
+*.pt

@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<title>TaThip · Prototype — ค้นหา & ติดตามยานพาหนะข้ามกล้อง</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+:root{
+ --bg:#f5f4f0; --side:#ffffff; --card:#ffffff; --cream:#f1eee4; --ink:#1b1b1b;
+ --mut:#8b8c88; --line:#ebebe7; --soft:#f4f4f1; --accent:#1b1b1b; --green:#3fa66a;
+ --red:#d9534f; --chip:#f4f4f1; --blue:#2f6fed; --amber:#b07d12;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+ font-family:"Leelawadee UI","Segoe UI","Sarabun",system-ui,sans-serif;font-size:14px}
+.app{display:flex;min-height:100vh}
+/* sidebar */
+.side{width:248px;background:var(--side);border-right:1px solid var(--line);
+ padding:22px 16px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh;overflow:auto}
+.logo{padding:6px 8px 18px;display:flex;align-items:center;gap:9px;font-size:21px;font-weight:800}
+.logo img{width:34px;display:block}
+.nav{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;color:#4a4b47;cursor:pointer;font-weight:500}
+.nav:hover{background:var(--soft)}
+.nav.on{background:var(--soft);color:var(--ink);font-weight:700}
+.nav svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8}
+.nav .ct{margin-left:auto;background:#eceae2;color:#6b6c66;font-size:12px;border-radius:7px;padding:1px 8px;font-weight:700}
+.sechead{color:var(--mut);font-size:11px;letter-spacing:.6px;text-transform:uppercase;margin:18px 8px 6px}
+.camrow{display:flex;align-items:center;gap:9px;padding:8px 12px;border-radius:9px;color:#55564f;cursor:pointer}
+.camrow:hover{background:var(--soft)}
+.camrow .gear{margin-left:auto;opacity:0;transition:.15s;font-size:12px;color:var(--blue)}
+.camrow:hover .gear{opacity:1}
+.dotg{width:8px;height:8px;border-radius:50%;background:var(--green);flex:none}
+.dotr{width:8px;height:8px;border-radius:50%;background:var(--red);flex:none}
+/* content */
+.content{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;gap:14px;padding:16px 26px;background:var(--bg);position:sticky;top:0;z-index:400}
+.search{flex:1;max-width:420px;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);
+ border-radius:11px;padding:9px 14px;color:var(--mut)}
+.search input{border:none;outline:none;flex:1;font:inherit;background:transparent;color:var(--ink)}
+.addbtn{margin-left:auto;background:var(--accent);color:#fff;border:none;border-radius:11px;padding:11px 18px;
+ font:inherit;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px}
+.addbtn.blue{background:var(--blue)}
+.page{padding:6px 26px 50px;display:none}.page.on{display:block}
+.h1{font-size:24px;font-weight:800;margin:6px 0 0}
+.muted{color:var(--mut)}
+/* dashboard hero */
+.hero{background:var(--cream);border-radius:20px;padding:34px 36px;margin-bottom:22px;position:relative;overflow:hidden}
+.hero h1{font-size:34px;font-weight:800;margin:0 0 8px;letter-spacing:.5px;display:flex;align-items:center;gap:13px}
+.herologo{height:62px;display:block}
+.hero p{font-size:16px;color:#5b5c55;max-width:640px;line-height:1.7;margin:0 0 20px}
+.hero .cta{background:var(--ink);color:#fff;border:none;border-radius:12px;padding:14px 26px;font:inherit;font-weight:700;cursor:pointer;font-size:15px}
+.hero .deco{position:absolute;right:-40px;top:-40px;width:230px;height:230px;border:30px solid #e6e1d2;border-radius:50%;opacity:.5}
+.hero .deco2{position:absolute;right:90px;bottom:-70px;width:150px;height:150px;border:24px solid #e6e1d2;border-radius:50%;opacity:.4}
+/* kpi */
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:22px}
+@media(max-width:900px){.kpis{grid-template-columns:1fr 1fr}}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+.kpi .lab{color:var(--mut);font-size:13px;font-weight:600}
+.kpi .val{font-size:30px;font-weight:800;margin-top:8px}
+.kpi .sub{color:var(--mut);font-size:12px;margin-top:2px}
+.dashgrid{display:grid;grid-template-columns:1.3fr 1fr;gap:18px;margin-bottom:22px}
+@media(max-width:900px){.dashgrid{grid-template-columns:1fr}}
+.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+.panel h4{margin:0 0 14px;font-size:16px;display:flex;align-items:center}
+.panel h4 .lnk{margin-left:auto;font-size:13px;color:var(--blue);cursor:pointer;font-weight:600}
+#dashmap{height:280px;border-radius:12px;border:1px solid var(--line)}
+.bars{display:flex;align-items:flex-end;gap:20px;height:160px;padding:0 10px}
+.bcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;height:100%}
+.bcol .bnum{font-weight:800;font-size:14px}
+.bcol .bar{width:38px;background:var(--ink);border-radius:6px 6px 0 0;margin-top:auto;transition:.4s}
+.bcol .lb{font-size:12px;color:var(--mut)}
+.savedmini{display:flex;flex-direction:column;gap:10px}
+.savedrow{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:11px;cursor:pointer}
+.savedrow:hover{background:var(--soft)}
+.savedrow img{width:54px;height:40px;object-fit:cover;border-radius:7px;flex:none}
+.savedrow .nm{font-weight:700;font-size:13px}
+.savedrow .mt{color:var(--mut);font-size:12px}
+/* track page */
+.searchgrid{display:grid;grid-template-columns:330px 1fr;gap:22px;align-items:start}
+.filter{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px;position:sticky;top:80px}
+.filter h3{margin:0 0 4px;font-size:16px}
+.flabel{font-size:13px;color:var(--mut);margin:16px 0 7px;font-weight:600}
+.sw{display:flex;flex-wrap:wrap;gap:8px}
+.swatch{width:38px;height:26px;border-radius:8px;border:2px solid transparent;cursor:pointer}
+.swatch.on{border-color:var(--blue);box-shadow:0 0 0 2px rgba(47,111,237,.25)}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{padding:6px 13px;border:1px solid var(--line);border-radius:18px;font-size:13px;color:#55564f;cursor:pointer;background:#fff;user-select:none}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600}
+.gobtn{width:100%;margin-top:18px;background:var(--accent);color:#fff;border:none;border-radius:11px;padding:12px;font:inherit;font-weight:700;cursor:pointer}
+.gobtn.blue{background:var(--blue)}
+.gobtn.ghost{background:#fff;color:#55564f;border:1px solid var(--line);margin-top:8px;font-weight:500}
+.gobtn:disabled{opacity:.4;cursor:not-allowed}
+input[type=date]{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff}
+/* time range */
+.timeins{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.timeins input[type=time]{flex:1;padding:9px 10px;border:1px solid var(--line);border-radius:10px;font:inherit;text-align:center;font-weight:700}
+.timeins span{color:var(--mut)}
+.dual{position:relative;height:28px}
+.dual input[type=range]{position:absolute;width:100%;margin:0;-webkit-appearance:none;background:none;pointer-events:none;top:7px;height:14px}
+.dual input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;pointer-events:auto;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--blue);cursor:pointer;box-shadow:0 1px 4px #0003}
+.dual .track{position:absolute;top:11px;left:0;right:0;height:6px;border-radius:3px;background:#e3e1d8}
+.dual .fill{position:absolute;top:11px;height:6px;border-radius:3px;background:var(--blue)}
+/* steps */
+.steps{display:flex;gap:8px;margin:14px 0 20px;flex-wrap:wrap}
+.stepb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mut);background:#fff;border:1px solid var(--line);border-radius:20px;padding:6px 14px}
+.stepb .num{width:20px;height:20px;border-radius:50%;background:#eceae2;color:#6b6c66;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
+.stepb.on{border-color:var(--ink);color:var(--ink);font-weight:700}
+.stepb.on .num{background:var(--ink);color:#fff}
+.stepb.done .num{background:var(--green);color:#fff}
+/* galleries */
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+.gcard{background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px;cursor:pointer;transition:.15s;position:relative}
+.gcard:hover{box-shadow:0 6px 18px rgba(0,0,0,.08);transform:translateY(-2px)}
+.gcard.sel{border-color:var(--blue);box-shadow:0 0 0 2px rgba(47,111,237,.3)}
+.gcard img{width:100%;height:96px;object-fit:cover;border-radius:9px;background:#eee}
+.gcard .gc-t{font-weight:700;margin-top:8px;display:flex;align-items:center;gap:6px;font-size:13px}
+.gcard .gc-m{color:var(--mut);font-size:12px;margin-top:3px}
+.gcard .tick{position:absolute;top:16px;right:16px;width:24px;height:24px;border-radius:7px;border:2px solid #fff;background:rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px}
+.gcard.tick-on .tick{background:var(--blue)}
+.score{position:absolute;top:16px;left:16px;background:#1b1b1bcc;color:#fff;font-size:12px;font-weight:700;border-radius:7px;padding:2px 7px}
+.score.hi{background:#2e7d46e6}
+.badge-target{position:absolute;top:16px;left:16px;background:var(--blue);color:#fff;font-size:11px;font-weight:700;border-radius:7px;padding:2px 8px}
+.sectitle{font-size:18px;font-weight:800;margin:4px 0 6px}
+.hint{background:#eef3ff;border-left:3px solid var(--blue);padding:11px 15px;border-radius:0 8px 8px 0;margin:6px 0 16px;color:#33425e}
+/* table */
+.tablecard{background:#fff;border:1px solid var(--line);border-radius:16px;padding:8px 6px;margin-top:18px}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;color:var(--mut);font-weight:600;font-size:13px;padding:16px 20px;border-bottom:1px solid var(--line)}
+td{padding:16px 20px;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:none}
+.stat{padding:5px 12px;border-radius:20px;font-size:13px;font-weight:600}
+.stat.ok{background:#e5f5ec;color:var(--green)}
+.stat.no{background:#fbe9e9;color:var(--red)}
+.pbar{position:relative;height:22px;background:#eceae2;border-radius:11px;overflow:hidden;min-width:140px}
+.pbar-fill{position:absolute;inset:0 auto 0 0;background:var(--blue);transition:width .3s;border-radius:11px}
+.pbar-txt{position:relative;display:block;text-align:center;font-size:11px;font-weight:700;line-height:22px;color:#1b1b1b;mix-blend-mode:difference;filter:invert(1)}
+.act{color:var(--blue);cursor:pointer;margin-right:12px}.act.del{color:var(--red)}
+/* visualize */
+#vmap{height:520px;border-radius:16px;border:1px solid var(--line)}
+.vizbar{display:flex;align-items:center;gap:14px;margin:0 0 14px;flex-wrap:wrap}
+.toggle{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--line);border-radius:11px;padding:9px 14px;cursor:pointer;font-weight:600}
+.sw-toggle{width:38px;height:22px;border-radius:12px;background:#d9d6cc;position:relative;transition:.2s}
+.sw-toggle::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px #0003}
+.toggle.on .sw-toggle{background:var(--blue)}
+.toggle.on .sw-toggle::after{left:18px}
+.leaflet-popup-content{font-family:inherit;margin:10px 12px}
+.pop img{width:160px;height:96px;object-fit:cover;border-radius:8px;display:block;margin-bottom:7px}
+.pop .pg{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+.pop .pg button{border:1px solid var(--line);background:#fff;border-radius:7px;width:26px;height:26px;cursor:pointer;font-weight:800}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;color:var(--mut);font-size:13px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.anim-ico svg{display:block;filter:drop-shadow(0 1px 2px #0006)}
+/* modal */
+.overlay{position:fixed;inset:0;background:rgba(20,20,18,.45);display:none;align-items:flex-start;justify-content:center;z-index:1000;padding:40px 16px;overflow:auto}
+.overlay.on{display:flex}
+.modal{background:var(--bg);border-radius:18px;width:100%;max-width:760px;padding:24px 26px 22px;box-shadow:0 30px 80px rgba(0,0,0,.3)}
+.modal h2{margin:0 0 2px;font-size:20px}
+.mclose{float:right;cursor:pointer;color:var(--mut);font-size:22px;line-height:1}
+.field{margin:14px 0}
+.field label{display:block;font-size:13px;color:var(--mut);font-weight:600;margin-bottom:6px}
+.field input[type=text]{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font:inherit}
+.filebox{border:2px dashed #d4d1c6;border-radius:14px;padding:26px;text-align:center;color:var(--mut);background:#fff;cursor:pointer}
+.filebox.has{border-style:solid;border-color:var(--green);color:var(--ink)}
+.framewrap{position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#000;line-height:0}
+.framewrap img{width:100%;display:block}
+.framewrap svg{position:absolute;inset:0;width:100%;height:100%}
+.tsbox{position:absolute;border:2px dashed #ffd23f;border-radius:4px}
+.tslabel{position:absolute;background:#ffd23f;color:#1b1b1b;font-size:11px;font-weight:700;border-radius:5px;padding:2px 6px;white-space:nowrap}
+.mininav{display:flex;gap:10px;margin-top:20px}
+.mininav .gobtn{margin-top:0}
+.summary{background:#fff;border:1px solid var(--line);border-radius:12px;padding:4px 16px}
+.summary div{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line)}
+.summary div:last-child{border-bottom:none}
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(40px);background:#1b1b1b;color:#fff;padding:13px 22px;border-radius:12px;font-weight:600;opacity:0;transition:.3s;z-index:2000}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.pin-help{font-size:12px;color:var(--mut);margin-top:6px}
+#pinmap{height:220px;border-radius:12px;border:1px solid var(--line)}
+.latlon{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.latlon input{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:10px;font:inherit}
+.emptybox{padding:50px;text-align:center;color:var(--mut);background:#fff;border:1px dashed var(--line);border-radius:16px}
+</style>
+</head>
+<body>
+<div class="app">
+ <aside class="side">
+   <div class="logo"><img src="logo_icon.png" alt="TaThip">TaThip</div>
+   <div class="nav on" data-p="dash"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>หน้าแรก</div>
+   <div class="nav" data-p="track"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>ค้นหา &amp; ติดตาม</div>
+   <div class="nav" data-p="saved"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>เส้นทางที่บันทึก<span class="ct" id="savedCt">0</span></div>
+   <div class="nav" data-p="cams"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M8 6l1.5-3h5L16 6"/></svg>จัดการกล้อง</div>
+   <div class="sechead">กล้องในระบบ</div>
+   <div id="sideCams"></div>
+   <div class="sechead">ผู้ใช้งาน</div>
+   <div class="camrow"><span style="width:26px;height:26px;border-radius:50%;background:#dfe3ee;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#4a5">AD</span>Admin · เจ้าหน้าที่</div>
+ </aside>
+
+ <div class="content">
+   <!-- DASHBOARD -->
+   <section class="page on" id="page-dash">
+     <div class="hero">
+       <div class="deco"></div><div class="deco2"></div>
+       <h1><img src="logo_icon.png" alt="" class="herologo">TaThip</h1>
+       <p>ระบบค้นหาและติดตามยานพาหนะข้ามกล้องวงจรปิดของเมืองขอนแก่น —
+          เลือกรถต้องสงสัยเพียงคันเดียว แล้วให้ระบบไล่หาทุกกล้องว่ารถคันนั้นวิ่งผ่านที่ไหน เวลาใด
+          พร้อมลากเส้นทางการเดินทางบนแผนที่จริง เปลี่ยนงานไล่ดูกล้องทีละตัวเป็นนาที ให้เหลือเพียงไม่กี่คลิก</p>
+       <button class="cta" onclick="go('track')">เริ่มค้นหารถ</button>
+     </div>
+     <div class="kpis" id="kpis"></div>
+     <div class="dashgrid">
+       <div class="panel"><h4>ตำแหน่งกล้องในระบบ<span class="lnk" onclick="go('cams')">จัดการกล้อง</span></h4><div id="dashmap"></div></div>
+       <div class="panel"><h4>เส้นทางที่บันทึกล่าสุด<span class="lnk" onclick="go('saved')">ดูทั้งหมด</span></h4><div class="savedmini" id="dashSaved"></div></div>
+     </div>
+     <div class="panel"><h4>จำนวน track ที่ตรวจพบรายกล้อง</h4><div class="bars" id="bars"></div></div>
+   </section>
+
+   <!-- TRACK -->
+   <section class="page" id="page-track">
+     <div class="h1">ค้นหา &amp; ติดตามรถ</div>
+     <div class="muted" style="margin-bottom:6px">เลือกเป้าหมายเอง แล้วติ๊กยืนยันคันที่ใช่ จากนั้นดูเส้นทางบนแผนที่ (human-in-the-loop)</div>
+     <div class="steps" id="trackSteps"></div>
+     <div class="searchgrid">
+       <div class="filter">
+         <h3>กรอกรายละเอียดรถ</h3>
+         <div class="flabel">ประเภทรถ</div><div class="chips" id="fTypes"></div>
+         <div class="flabel">สีของรถ</div><div class="sw" id="fColors"></div>
+         <div class="flabel">กล้อง</div><div class="chips" id="fCams"></div>
+         <div class="flabel">วันที่</div><input type="date" id="fDate" value="2026-04-05">
+         <div class="flabel">ช่วงเวลา (พิมพ์ได้)</div>
+         <div class="timeins">
+           <input type="time" id="tLoI" value="00:00"><span>ถึง</span><input type="time" id="tHiI" value="23:59">
+         </div>
+         <div class="dual">
+           <div class="track"></div><div class="fill" id="rfill"></div>
+           <input type="range" id="rLo" min="0" max="1439" value="0">
+           <input type="range" id="rHi" min="0" max="1439" value="1439">
+         </div>
+         <button class="gobtn" onclick="findCandidates()">ค้นหารถ</button>
+         <button class="gobtn ghost" onclick="resetTrack()">เริ่มใหม่</button>
+       </div>
+       <div id="trackBody"></div>
+     </div>
+   </section>
+
+   <!-- VISUALIZE -->
+   <section class="page" id="page-viz">
+     <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px">
+       <div><div class="h1">เส้นทางการเดินทางของรถ</div><div class="muted" id="vizSub">—</div></div>
+       <button class="addbtn" style="margin-left:auto" onclick="go('track')">กลับไปแก้ผลค้นหา</button>
+     </div>
+     <div class="vizbar" style="margin-top:16px">
+       <div class="toggle" id="pathToggle" onclick="togglePathway()"><span class="sw-toggle"></span>โหมด Pathway (วิ่งตามถนน)</div>
+       <div class="toggle on" id="playToggle" onclick="toggleAnim()"><span class="sw-toggle"></span><span id="playTxt">หยุดอนิเมชัน</span></div>
+       <button class="addbtn blue" onclick="openSaveDialog()">บันทึกเส้นทางนี้</button>
+     </div>
+     <div id="vmap"></div>
+     <div class="legend">
+       <span><span style="width:14px;height:14px;border-radius:50%;background:#2f6fed;border:2px solid #fff;box-shadow:0 0 0 1px #2f6fed"></span> ตำแหน่งกล้องที่พบรถ</span>
+       <span>ลูกศรวิ่งตามลำดับเวลา (จบแล้วหยุด 2 วินาที แล้ววนซ้ำ)</span>
+       <span><span style="width:22px;height:4px;background:#2f6fed;display:inline-block;border-radius:2px"></span> เส้นทางถนนจริง (โหมด Pathway วาดตามรอยที่วิ่ง)</span>
+     </div>
+   </section>
+
+   <!-- SAVED -->
+   <section class="page" id="page-saved">
+     <div class="h1">เส้นทางที่บันทึก</div>
+     <div class="muted" style="margin-bottom:18px">เปิดดูผลการสืบที่บันทึกไว้ได้ภายหลัง</div>
+     <div id="savedBody"></div>
+   </section>
+
+   <!-- CAMERAS -->
+   <section class="page" id="page-cams">
+     <div style="display:flex;align-items:center">
+       <div><div class="h1">รายการกล้องวงจรปิดในระบบ</div>
+       <div class="muted">เพิ่มกล้องครั้งเดียว (ชื่อ + พิกัด + ROI) แล้วกดปุ่มตั้งค่าเพื่อแก้ภายหลัง</div></div>
+       <button class="addbtn" style="margin-left:auto" onclick="openAddCam()">＋ เพิ่มกล้องใหม่</button>
+     </div>
+     <div class="tablecard">
+       <table>
+         <thead><tr><th>รหัสกล้อง</th><th>ชื่อ/ตำแหน่งติดตั้ง</th><th>พิกัด</th><th>เวลาเริ่มคลิป (OCR)</th><th>ROI</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+         <tbody id="camTable"></tbody>
+       </table>
+     </div>
+   </section>
+ </div>
+</div>
+
+<!-- ADD CAMERA MODAL -->
+<div class="overlay" id="addOverlay">
+ <div class="modal">
+   <span class="mclose" onclick="closeAddCam()">✕</span>
+   <h2>เพิ่มกล้องใหม่</h2>
+   <div class="muted" id="addStepLabel">ขั้นที่ 1 จาก 5</div>
+   <div class="steps" id="addSteps"></div>
+   <div id="addStepBody"></div>
+   <div class="mininav">
+     <button class="gobtn ghost" style="margin-top:0;flex:1" id="addBack" onclick="addStep(-1)">ย้อนกลับ</button>
+     <button class="gobtn blue" style="margin-top:0;flex:2" id="addNext" onclick="addStep(1)">ถัดไป</button>
+   </div>
+ </div>
+</div>
+
+<!-- SAVE MODAL -->
+<div class="overlay" id="saveOverlay">
+ <div class="modal" style="max-width:460px">
+   <span class="mclose" onclick="document.getElementById('saveOverlay').classList.remove('on')">✕</span>
+   <h2>บันทึกเส้นทาง</h2>
+   <div class="muted">ตั้งชื่อ/โน้ตเพื่อเปิดดูภายหลัง</div>
+   <div class="field"><label>ชื่อเส้นทาง</label><input type="text" id="savePathName" placeholder="เช่น กระบะขาว คดี 1042"></div>
+   <div class="field"><label>โน้ต (ไม่บังคับ)</label><input type="text" id="savePathNote" placeholder="เลขคดี / รายละเอียด"></div>
+   <button class="gobtn blue" onclick="confirmSavePath()">บันทึก</button>
+ </div>
+</div>
+
+<!-- SETTINGS / DELETE CAMERA MODAL -->
+<div class="overlay" id="setOverlay">
+ <div class="modal" style="max-width:460px">
+   <span class="mclose" onclick="document.getElementById('setOverlay').classList.remove('on')">✕</span>
+   <h2 id="setTitle">ตั้งค่ากล้อง</h2>
+   <div class="muted">แก้ข้อมูลกล้อง หรือลบออกจากระบบ</div>
+   <div class="field"><label>ชื่อกล้อง</label><input type="text" id="setName"></div>
+   <div class="latlon"><input id="setLat" placeholder="lat"><input id="setLon" placeholder="lon"></div>
+   <div class="field" style="margin-top:12px"><label>เวลาเริ่มคลิป</label><input type="text" id="setStart" placeholder="YYYY/MM/DD HH:MM:SS"></div>
+   <div style="display:flex;gap:10px;margin-top:6px">
+     <button class="gobtn blue" style="flex:2" onclick="saveCamSettings()">บันทึก</button>
+     <button class="gobtn ghost" style="flex:1;color:var(--red);border-color:var(--red)" onclick="deleteCam()">ลบกล้อง</button>
+   </div>
+   <button class="gobtn ghost" style="width:100%;margin-top:8px" onclick="reprocessCam()">↻ ประมวลผลใหม่</button>
+ </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="tracks_data.js"></script>
+<script src="route.js"></script>
+<script>
+/* ============ DATA ============ */
+const COLORS=[["ขาว","#e9e9eb"],["ดำ","#222"],["เทา/เงิน","#9aa0a6"],["แดง","#c0392b"],
+ ["น้ำเงิน","#2563eb"],["เขียว","#27ae60"],["เหลือง","#f1c40f"],["ส้ม","#e67e22"]];
+let CAMS=TDATA.cameras;                          // กล้องที่มี track (จาก pipeline)
+let CAMORDER=Object.keys(CAMS).sort();
+const ONLINE={};CAMORDER.forEach(c=>ONLINE[c]=true);
+const ROUTES=window.ROUTES||{};
+// อัปเดต track หลังประมวลผลกล้องใหม่
+function setTracks(data){
+ TRACKS=data.tracks; TDATA.cameras=data.cameras; CAMS=data.cameras;
+ CAMORDER=Object.keys(CAMS).sort(); selCams=new Set(CAMORDER);
+ buildFilters(); if(document.getElementById("page-dash").classList.contains("on"))dash();
+}
+
+/* ===== กล้องที่ลงทะเบียน (DB-backed ผ่าน pywebview; fallback in-memory ในเบราว์เซอร์) ===== */
+let CAMERAS=[];
+const api=()=>(window.pywebview&&window.pywebview.api)||null;
+async function loadState(){
+ const a=api(); if(!a) return;
+ try{
+   const s=await a.get_state();
+   CAMERAS=s.cameras||[];
+   savedPaths=s.saved_paths||[];
+   document.getElementById("savedCt").textContent=savedPaths.length;
+   renderSideCams(); renderCamTable();
+   if(document.getElementById("page-dash").classList.contains("on")) dash();
+   if(document.getElementById("page-saved").classList.contains("on")) renderSaved();
+ }catch(e){console.warn("loadState",e);}
+}
+
+// track จริง (1 track = รถ 1 คันในกล้อง 1 ครั้ง) จาก tracks_data.js
+let TRACKS=TDATA.tracks;
+const t2min=t=>{const[h,m]=t.split(":");return +h*60+ +m;};
+const m2t=m=>String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");
+
+/* ============ NAV ============ */
+function go(p){
+ document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("on",n.dataset.p===p));
+ document.querySelectorAll(".page").forEach(s=>s.classList.toggle("on",s.id==="page-"+p));
+ if(p==="dash")dash();
+ if(p==="track")renderTrack();
+ if(p==="saved")renderSaved();
+ if(p==="viz")setTimeout(()=>{if(vmap)vmap.invalidateSize();},150);
+}
+document.querySelectorAll(".nav").forEach(n=>n.onclick=()=>go(n.dataset.p));
+function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("on");
+ setTimeout(()=>t.classList.remove("on"),2400);}
+function dot(h){return `<span style="width:14px;height:14px;border-radius:50%;border:1px solid #0002;flex:none;display:inline-block;background:${h}"></span>`}
+
+/* ============ SIDEBAR ============ */
+function renderSideCams(){
+ const el=document.getElementById("sideCams");
+ if(!CAMERAS.length){el.innerHTML=`<div class="camrow" style="color:var(--mut);font-size:13px">ยังไม่มีกล้อง — เพิ่มที่หน้า “จัดการกล้อง”</div>`;return;}
+ el.innerHTML=CAMERAS.map(c=>
+  `<div class="camrow"><span class="dotg"></span>${(c.name||c.id).split(" (")[0]}
+   <span class="gear" onclick="event.stopPropagation();camSettings('${c.id}')">ตั้งค่า</span></div>`).join("");
+}
+/* ===== ตั้งค่า/ลบ กล้อง (จริง) ===== */
+function camSettings(id){
+ const c=CAMERAS.find(x=>x.id===id); if(!c)return;
+ document.getElementById("setName").value=c.name||"";
+ document.getElementById("setLat").value=c.lat??"";
+ document.getElementById("setLon").value=c.lon??"";
+ document.getElementById("setStart").value=c.start_time||"";
+ document.getElementById("setOverlay").dataset.id=id;
+ document.getElementById("setTitle").textContent="ตั้งค่ากล้อง "+(c.name||id);
+ document.getElementById("setOverlay").classList.add("on");
+}
+async function saveCamSettings(){
+ const id=document.getElementById("setOverlay").dataset.id;
+ const c=CAMERAS.find(x=>x.id===id); if(!c)return;
+ const f={name:document.getElementById("setName").value.trim(),
+   lat:+document.getElementById("setLat").value, lon:+document.getElementById("setLon").value,
+   start_time:document.getElementById("setStart").value.trim()};
+ Object.assign(c,f);
+ const a=api(); if(a) await a.update_camera(id,f);
+ document.getElementById("setOverlay").classList.remove("on");
+ renderSideCams(); renderCamTable(); if(document.getElementById("page-dash").classList.contains("on"))dash();
+ toast("บันทึกการตั้งค่าแล้ว");
+}
+async function reprocessCam(){
+ const id=document.getElementById("setOverlay").dataset.id;
+ const a=api(); if(!a){toast("ใช้ได้เฉพาะบนเดสก์ท็อป");return;}
+ const r=await a.start_processing(id);
+ if(r&&r.ok){document.getElementById("setOverlay").classList.remove("on");
+   procState[id]=0; renderCamTable(); pollProc(id); toast("เริ่มประมวลผลใหม่");}
+ else toast((r&&r.error)||"เริ่มไม่ได้");
+}
+async function deleteCam(){
+ const id=document.getElementById("setOverlay").dataset.id;
+ if(!confirm("ลบกล้องนี้?")) return;
+ CAMERAS=CAMERAS.filter(x=>x.id!==id);
+ const a=api(); if(a){const res=await a.delete_camera(id); if(res&&res.data)setTracks(res.data);}
+ document.getElementById("setOverlay").classList.remove("on");
+ renderSideCams(); renderCamTable(); if(document.getElementById("page-dash").classList.contains("on"))dash();
+ toast("ลบกล้องแล้ว");
+}
+
+/* ============ DASHBOARD ============ */
+let dashmap=null;
+function dash(){
+ const tracksToday=TRACKS.length;
+ document.getElementById("kpis").innerHTML=[
+   ["กล้องในระบบ",`${CAMERAS.length}`,"ลงทะเบียนแล้ว"],
+   ["track ที่ตรวจพบ",tracksToday,"จากทุกกล้อง"],
+   ["เส้นทางที่บันทึก",savedPaths.length,"พร้อมเปิดดูซ้ำ"],
+ ].map(([l,v,s])=>`<div class="kpi"><div class="lab">${l}</div><div class="val">${v}</div><div class="sub">${s}</div></div>`).join("");
+ // bars per camera
+ const perCam={};CAMORDER.forEach(c=>perCam[c]=0);
+ TRACKS.forEach(t=>{if(perCam[t.cam]!=null)perCam[t.cam]++;});
+ const mx=Math.max(...Object.values(perCam),1);
+ document.getElementById("bars").innerHTML=CAMORDER.map(c=>
+   `<div class="bcol"><div class="bnum">${perCam[c]}</div><div class="bar" style="height:${15+perCam[c]/mx*85}%"></div><div class="lb">กล้อง ${c}</div></div>`).join("");
+ // recent saved
+ renderDashSaved();
+ // mini map
+ if(dashmap){dashmap.remove();dashmap=null;}
+ const mapdiv=document.getElementById("dashmap");
+ const withGeo=CAMERAS.filter(c=>c.lat&&c.lon);
+ if(!withGeo.length){mapdiv.innerHTML=`<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--mut);text-align:center;padding:20px">ยังไม่มีกล้องในระบบ<br>ไปที่ “จัดการกล้อง” เพื่อเพิ่มกล้องแรก</div>`;return;}
+ mapdiv.innerHTML="";
+ dashmap=L.map("dashmap",{zoomControl:false});
+ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(dashmap);
+ const pts=[];withGeo.forEach(c=>{pts.push([c.lat,c.lon]);
+   L.circleMarker([c.lat,c.lon],{radius:10,color:"#fff",weight:3,fillColor:"#3fa66a",fillOpacity:1})
+    .addTo(dashmap).bindPopup(`<b>${c.name||c.id}</b><br>กำลังทำงาน`);});
+ dashmap.fitBounds(L.latLngBounds(pts).pad(0.3));
+ setTimeout(()=>dashmap.invalidateSize(),150);
+}
+function renderDashSaved(){
+ const b=document.getElementById("dashSaved");
+ if(!savedPaths.length){b.innerHTML=`<div class="muted" style="padding:18px 4px">ยังไม่มีเส้นทางที่บันทึก — เริ่มสืบรถแล้วกดบันทึก</div>`;return;}
+ b.innerHTML=savedPaths.slice(0,4).map(p=>`<div class="savedrow" onclick="openSaved('${p.id}')">
+   <img src="${p.sel.target.img}">
+   <div><div class="nm">${p.name}</div><div class="mt">${p.sel.tracks.length} จุด · ${new Set(p.sel.tracks.map(t=>t.cam)).size} กล้อง · ${p.created}</div></div></div>`).join("");
+}
+
+/* ============ TRACK FLOW ============ */
+let selColors=new Set(),selTypes=new Set(),selCams=new Set(CAMORDER);
+let rLo=0,rHi=1439;
+let candidates=[],target=null,results=[],ticked=new Set();
+let phase="filter";
+
+function buildFilters(){
+ document.getElementById("fColors").innerHTML=COLORS.map(([n,h])=>
+  `<div class="swatch" title="${n}" data-c="${n}" style="background:${h}"></div>`).join("");
+ document.querySelectorAll("#fColors .swatch").forEach(s=>s.onclick=()=>{s.classList.toggle("on");
+  const c=s.dataset.c;selColors.has(c)?selColors.delete(c):selColors.add(c);});
+ const types=[["car","เก๋ง"],["pickup","กระบะ"],["truck","รถบรรทุก"],["motorcycle","มอเตอร์ไซค์"]];
+ document.getElementById("fTypes").innerHTML=types.map(([t,th])=>`<div class="chip" data-t="${t}">${th}</div>`).join("");
+ document.querySelectorAll("#fTypes .chip").forEach(c=>c.onclick=()=>{c.classList.toggle("on");
+  const t=c.dataset.t;selTypes.has(t)?selTypes.delete(t):selTypes.add(t);});
+ document.getElementById("fCams").innerHTML=CAMORDER.map(c=>`<div class="chip on" data-c="${c}">กล้อง ${c}</div>`).join("");
+ document.querySelectorAll("#fCams .chip").forEach(c=>c.onclick=()=>{c.classList.toggle("on");
+  const id=c.dataset.c;selCams.has(id)?selCams.delete(id):selCams.add(id);});
+ // time: slider + typeable inputs (sync 2 ทาง)
+ const lo=document.getElementById("rLo"),hi=document.getElementById("rHi"),
+       loI=document.getElementById("tLoI"),hiI=document.getElementById("tHiI");
+ function paint(){rLo=Math.min(+lo.value,+hi.value);rHi=Math.max(+lo.value,+hi.value);
+   const fill=document.getElementById("rfill");fill.style.left=(rLo/1439*100)+"%";fill.style.width=((rHi-rLo)/1439*100)+"%";}
+ function fromSlider(){paint();loI.value=m2t(rLo);hiI.value=m2t(rHi);}
+ function fromInput(){let a=loI.value?t2min(loI.value):0,b=hiI.value?t2min(hiI.value):1439;
+   lo.value=Math.min(a,b);hi.value=Math.max(a,b);paint();}
+ lo.oninput=fromSlider;hi.oninput=fromSlider;loI.onchange=fromInput;hiI.onchange=fromInput;
+ fromSlider();
+}
+function stepBar(){
+ const steps=[["1","กรองเป้าหมาย","filter"],["2","เลือกคันเป้าหมาย","pick"],["3","ติ๊กผลข้ามกล้อง","results"]];
+ const order=["filter","pick","results"],ci=order.indexOf(phase);
+ document.getElementById("trackSteps").innerHTML=steps.map(([n,l,p],i)=>
+  `<div class="stepb ${p===phase?'on':(i<ci?'done':'')}"><span class="num">${i<ci?'✓':n}</span>${l}</div>`).join("");
+}
+function renderTrack(){stepBar();
+ if(phase==="filter")renderCandidates(true);
+ else if(phase==="pick")renderCandidates(false);
+ else renderResults();
+}
+function findCandidates(){
+ candidates=TRACKS.filter(t=>
+   (selColors.size===0||selColors.has(t.color))&&
+   (selTypes.size===0||selTypes.has(t.type))&&
+   selCams.has(t.cam)&&t2min(t.time)>=rLo&&t2min(t.time)<=rHi);
+ phase="pick";target=null;renderTrack();
+}
+function renderCandidates(initial){
+ const b=document.getElementById("trackBody");
+ if(initial){b.innerHTML=`<div class="emptybox">กรอกรายละเอียดรถด้านซ้าย แล้วกด “ค้นหารถ” เพื่อเลือกรถเป้าหมาย</div>`;return;}
+ if(!candidates.length){b.innerHTML=`<div class="emptybox">ไม่พบรถที่ตรงตัวกรอง ลองปรับเงื่อนไข</div>`;return;}
+ b.innerHTML=`<div class="sectitle">เลือกรถเป้าหมายที่จะติดตาม</div>
+  <div class="hint">เลือกรถที่ตรงความต้องการมากที่สุด (${candidates.length} รายการ)</div>
+  <div class="gal">`+candidates.map(t=>`
+   <div class="gcard" onclick="selectTarget('${t.tid}')">
+     <img src="${t.img}">
+     <div class="gc-t">${dot(t.colorHex)} ${t.color} · ${t.typeTh}</div>
+     <div class="gc-m">กล้อง ${t.cam} · ${t.time} น.</div>
+     <div class="gc-m">${t.date}</div></div>`).join("")+`</div>`;
+}
+function cosine(a,b){let s=0;for(let i=0;i<a.length;i++)s+=a[i]*b[i];return s;}
+const SIM_TH=0.62;   // เกณฑ์ความเหมือน Re-ID จริง (cosine) — คู่รถเดียวกัน ~0.71, ต่างคัน ~0.53
+function selectTarget(tid){
+ target=TRACKS.find(t=>t.tid===tid);
+ // ค้นด้วย embedding Re-ID จริง: cosine similarity เทียบกับทุก track
+ results=TRACKS.filter(t=>t.tid!==target.tid&&t.emb&&target.emb)
+   .map(t=>({...t,score:cosine(target.emb,t.emb)}))
+   .filter(t=>t.score>=SIM_TH)
+   .sort((a,b)=>b.score-a.score);
+ // ระบบติ๊กให้ก่อน = คันที่ pipeline จับเป็นกลุ่มข้ามกล้องเดียวกัน (ของจริง)
+ ticked=new Set(results.filter(r=>r.veh===target.veh&&r.cam!==target.cam).map(r=>r.tid));
+ phase="results";renderTrack();
+}
+function renderResults(){
+ stepBar();
+ const tgt=target,b=document.getElementById("trackBody");
+ b.innerHTML=`
+  <div class="sectitle">รถที่เลือก</div>
+  <div class="gal" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));max-width:200px">
+    <div class="gcard sel"><div class="badge-target">เป้าหมาย</div><img src="${tgt.img}">
+      <div class="gc-t">${dot(tgt.colorHex)} ${tgt.color} · ${tgt.typeTh}</div>
+      <div class="gc-m">กล้อง ${tgt.cam} · ${tgt.time} น.</div></div></div>
+  <div class="sectitle" style="margin-top:22px">เลือกรูปที่ตรงกับรถที่เลือก <span class="muted" style="font-size:14px">(จากแต่ละกล้อง · เรียงตามความเหมือน Re-ID)</span></div>
+  <div class="hint">ระบบติ๊กคันที่คาดว่าใช่ให้แล้ว — ตรวจสอบแล้วติ๊ก/เอาออกได้เอง เลือกแล้ว <b id="tkCount">${ticked.size}</b> คัน</div>
+  <div class="gal">`+results.map(r=>`
+   <div class="gcard ${ticked.has(r.tid)?'tick-on':''}" id="gc-${r.tid}" onclick="toggleTick('${r.tid}')">
+     <div class="score ${r.score>=0.70?'hi':''}">${Math.round(r.score*100)}%</div>
+     <div class="tick">${ticked.has(r.tid)?'✓':''}</div>
+     <img src="${r.img}">
+     <div class="gc-t">${dot(r.colorHex)} ${r.color} · ${r.typeTh}</div>
+     <div class="gc-m">กล้อง ${r.cam} · ${r.time} น.</div>
+     <div class="gc-m">${r.date}</div></div>`).join("")+`</div>
+  <button class="gobtn blue" id="vizBtn" style="max-width:340px;margin-top:22px" onclick="goVisualize()">
+    Visualize เส้นทาง (${ticked.size} คัน)</button>`;
+}
+function toggleTick(tid){
+ if(ticked.has(tid))ticked.delete(tid);else ticked.add(tid);
+ const el=document.getElementById("gc-"+tid);el.classList.toggle("tick-on");
+ el.querySelector(".tick").textContent=ticked.has(tid)?"✓":"";
+ document.getElementById("tkCount").textContent=ticked.size;
+ document.getElementById("vizBtn").textContent=`Visualize เส้นทาง (${ticked.size} คัน)`;
+}
+function resetTrack(){selColors.clear();selTypes.clear();selCams=new Set(CAMORDER);
+ document.querySelectorAll("#fColors .swatch,#fTypes .chip").forEach(e=>e.classList.remove("on"));
+ document.querySelectorAll("#fCams .chip").forEach(e=>e.classList.add("on"));
+ phase="filter";target=null;candidates=[];results=[];ticked.clear();renderTrack();}
+
+/* ============ VISUALIZE ============ */
+let vmap=null,vmarkers=[],animMarker=null,animRAF=null,animOn=true,pathwayMode=false;
+let waypoints=[],animPath=[],camPages={},staticLayer=null,trail=null;
+let currentSelection=null;
+
+function goVisualize(){
+ if(ticked.size===0){toast("ยังไม่ได้ติ๊กรถ");return;}
+ let tracks=results.filter(r=>ticked.has(r.tid));
+ // รวม "รถที่เลือก" (target) เข้าไปด้วย ถ้ายังไม่อยู่ในรายการ
+ if(!tracks.some(t=>t.tid===target.tid)) tracks=[{...target,score:1},...tracks];
+ currentSelection={target:target,tracks:tracks};
+ openVisualize(currentSelection);
+}
+function sortByTime(a,b){if(a.date!==b.date)return a.date<b.date?-1:1;return t2min(a.time)-t2min(b.time);}
+function openVisualize(sel){
+ go('viz');
+ const seq=[...sel.tracks].sort(sortByTime);
+ document.getElementById("vizSub").innerHTML=
+   `${dot(sel.target.colorHex)} ${sel.target.color} · ${sel.target.typeTh} — พบ ${seq.length} จุด ใน ${new Set(seq.map(s=>s.cam)).size} กล้อง · เรียงเวลา ${seq[0].time}–${seq[seq.length-1].time} น.`;
+ camPages={};seq.forEach(s=>{(camPages[s.cam]=camPages[s.cam]||[]).push(s);});
+ waypoints=[];seq.forEach(s=>{const last=waypoints[waypoints.length-1];
+   if(!last||last.cam!==s.cam)waypoints.push({cam:s.cam,lat:s.lat,lon:s.lon,time:s.time});});
+ drawViz();
+}
+function routeSeg(a,b){const k=a+"_"+b;return ROUTES[k]||[[CAMS[a].lat,CAMS[a].lon],[CAMS[b].lat,CAMS[b].lon]];}
+function drawViz(){
+ if(vmap){vmap.remove();vmap=null;}
+ vmarkers=[];trail=null;
+ vmap=L.map("vmap");
+ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(vmap);
+ // คำนวณเส้นทาง + จุดทั้งหมดก่อน
+ let allpts=[],segs=[];
+ for(let i=0;i<waypoints.length-1;i++){const seg=routeSeg(waypoints[i].cam,waypoints[i+1].cam);
+   segs.push(seg);allpts=allpts.concat(seg);}
+ Object.keys(camPages).forEach(cam=>{const c=CAMS[cam];allpts.push([c.lat,c.lon]);});
+ // ตั้ง view ก่อน แล้วค่อยเพิ่ม layer (กัน Leaflet crash ตอน map ยังไม่มีขนาด)
+ vmap.fitBounds(L.latLngBounds(allpts).pad(0.25));
+ staticLayer=L.layerGroup();
+ segs.forEach(seg=>L.polyline(seg,{color:"#2f6fed",weight:5,opacity:.35}).addTo(staticLayer));
+ if(!pathwayMode)staticLayer.addTo(vmap);            // Pathway = เริ่มแผนที่โล่ง
+ Object.entries(camPages).forEach(([cam,list])=>{const c=CAMS[cam];
+   const mk=L.circleMarker([c.lat,c.lon],{radius:13,color:"#fff",weight:3,fillColor:"#2f6fed",fillOpacity:1}).addTo(vmap);
+   L.marker([c.lat,c.lon],{icon:L.divIcon({className:"",html:`<div style="color:#fff;font-weight:800;font-size:12px;width:26px;text-align:center;margin:-8px 0 0 -13px">${cam}</div>`})}).addTo(vmap);
+   list._page=0;mk.bindPopup(popupHTML(cam),{minWidth:180});vmarkers.push({cam,mk});});
+ buildAnimPath();
+ setTimeout(()=>vmap.invalidateSize(),150);
+ startAnim();
+}
+function popupHTML(cam){const list=camPages[cam],p=list._page||0,d=list[p];
+ const pg=list.length>1?`<div class="pg"><button onclick="pageCam('${cam}',-1)">‹</button>
+   <span>ครั้งที่ ${p+1}/${list.length} · ${d.time} น.</span><button onclick="pageCam('${cam}',1)">›</button></div>`
+   :`<div style="margin-top:6px"><b>${d.time} น.</b></div>`;
+ return `<div class="pop"><img src="${d.img}"><b>กล้อง ${cam}</b> · ${CAMS[cam].name}${pg}</div>`;}
+function pageCam(cam,dir){const list=camPages[cam];list._page=((list._page||0)+dir+list.length)%list.length;
+ const o=vmarkers.find(m=>m.cam===cam);if(o)o.mk.setPopupContent(popupHTML(cam));}
+function buildAnimPath(){animPath=[];
+ if(pathwayMode){for(let i=0;i<waypoints.length-1;i++)routeSeg(waypoints[i].cam,waypoints[i+1].cam).forEach(p=>animPath.push(p));}
+ else waypoints.forEach(w=>animPath.push([w.lat,w.lon]));}
+function bearing(a,b){return Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI;}
+function animIcon(){
+ if(pathwayMode) // หัวลูกศร
+  return L.divIcon({className:"anim-ico",iconSize:[26,26],iconAnchor:[13,13],
+   html:`<svg id="aIco" width="26" height="26" viewBox="0 0 24 24"><polygon points="12,3 20,21 12,16 4,21" fill="#2f6fed" stroke="#fff" stroke-width="1.5"/></svg>`});
+ // ลูกศรมีหาง
+ return L.divIcon({className:"anim-ico",iconSize:[30,30],iconAnchor:[15,15],
+  html:`<svg id="aIco" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#2f6fed" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="21" x2="12" y2="7"/><polyline points="6,12 12,5 18,12"/></svg>`});
+}
+function startAnim(){
+ cancelAnimationFrame(animRAF);
+ if(animMarker){vmap.removeLayer(animMarker);animMarker=null;}
+ if(trail){vmap.removeLayer(trail);trail=null;}
+ if(animPath.length<2||!animOn)return;
+ animMarker=L.marker(animPath[0],{icon:animIcon(),interactive:false}).addTo(vmap);
+ if(pathwayMode){trail=L.polyline([animPath[0]],{color:"#2f6fed",weight:5,opacity:.9}).addTo(vmap);}
+ let seg=0,tseg=0;const speed=pathwayMode?0.02:0.013;
+ function rot(a,b){const el=document.getElementById("aIco");if(el)el.style.transform=`rotate(${bearing(a,b)}deg)`;}
+ function frame(){
+   if(!animOn)return;
+   tseg+=speed;
+   if(tseg>=1){tseg=0;seg++;
+     if(seg>=animPath.length-1){animMarker.setLatLng(animPath[animPath.length-1]);
+       if(trail)trail.addLatLng(animPath[animPath.length-1]);
+       setTimeout(()=>{seg=0;tseg=0;if(trail)trail.setLatLngs([animPath[0]]);if(animOn)animRAF=requestAnimationFrame(frame);},2000);
+       return;}}
+   const a=animPath[seg],b=animPath[seg+1];
+   const lat=a[0]+(b[0]-a[0])*tseg,lon=a[1]+(b[1]-a[1])*tseg;
+   animMarker.setLatLng([lat,lon]);rot(a,b);
+   if(trail)trail.addLatLng([lat,lon]);
+   animRAF=requestAnimationFrame(frame);
+ }
+ animRAF=requestAnimationFrame(frame);
+}
+function togglePathway(){pathwayMode=!pathwayMode;
+ document.getElementById("pathToggle").classList.toggle("on",pathwayMode);
+ if(staticLayer){if(pathwayMode)vmap.removeLayer(staticLayer);else staticLayer.addTo(vmap);}
+ buildAnimPath();startAnim();}
+function toggleAnim(){animOn=!animOn;
+ document.getElementById("playToggle").classList.toggle("on",animOn);
+ document.getElementById("playTxt").textContent=animOn?"หยุดอนิเมชัน":"เล่นอนิเมชัน";
+ if(animOn)startAnim();else cancelAnimationFrame(animRAF);}
+
+/* ============ SAVED ============ */
+let savedPaths=[];
+function openSaveDialog(){if(!currentSelection){toast("ไม่มีเส้นทางให้บันทึก");return;}
+ document.getElementById("saveOverlay").classList.add("on");
+ document.getElementById("savePathName").value=`${currentSelection.target.color} ${currentSelection.target.typeTh} · ${currentSelection.tracks.length} จุด`;}
+async function confirmSavePath(){
+ const name=document.getElementById("savePathName").value.trim()||"เส้นทางไม่มีชื่อ";
+ const note=document.getElementById("savePathNote").value.trim();
+ const sel=JSON.parse(JSON.stringify(currentSelection));
+ const a=api(); let id;
+ if(a){id=await a.save_path({name,note,sel});}else{id="P-"+Date.now();}
+ savedPaths.unshift({id,name,note,created:new Date().toLocaleString("th-TH"),sel});
+ document.getElementById("saveOverlay").classList.remove("on");
+ document.getElementById("savedCt").textContent=savedPaths.length;
+ toast("บันทึกเส้นทางแล้ว (เก็บถาวร)");
+}
+function renderSaved(){
+ const b=document.getElementById("savedBody");
+ if(!savedPaths.length){b.innerHTML=`<div class="emptybox">ยังไม่มีเส้นทางที่บันทึก — ไปที่ “ค้นหา &amp; ติดตาม” แล้วกดบันทึกเส้นทาง</div>`;return;}
+ b.innerHTML=`<div class="gal" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">`+
+  savedPaths.map(p=>`<div class="gcard" style="cursor:default">
+    <div style="display:flex;gap:6px">${p.sel.tracks.slice(0,3).map(t=>`<img src="${t.img}" style="height:70px;flex:1">`).join("")}</div>
+    <div class="gc-t" style="margin-top:10px">${dot(p.sel.target.colorHex)} ${p.name}</div>
+    <div class="gc-m">${p.sel.tracks.length} จุด · ${new Set(p.sel.tracks.map(t=>t.cam)).size} กล้อง</div>
+    ${p.note?`<div class="gc-m">${p.note}</div>`:""}<div class="gc-m">${p.created}</div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="gobtn blue" style="margin-top:0;padding:8px" onclick="openSaved('${p.id}')">เปิดดู</button>
+      <button class="gobtn ghost" style="margin-top:0;padding:8px;flex:none;width:64px" onclick="delSaved('${p.id}')">ลบ</button>
+    </div></div>`).join("")+`</div>`;
+}
+function openSaved(id){const p=savedPaths.find(x=>String(x.id)===String(id));currentSelection=p.sel;openVisualize(p.sel);}
+async function delSaved(id){savedPaths=savedPaths.filter(x=>String(x.id)!==String(id));
+ const a=api(); if(a) await a.delete_path(id);
+ document.getElementById("savedCt").textContent=savedPaths.length;renderSaved();}
+
+/* ============ CAMERA TABLE (จาก DB) ============ */
+let procState={};   // cam_id -> {pct, stage, done}
+function statusCell(id){
+ const p=procState[id];
+ if(!p) return '<span class="stat ok">พร้อม</span>';
+ if(p.cancelled) return '<span class="stat no">ยกเลิกแล้ว</span>';
+ if(p.error) return '<span class="stat no">ผิดพลาด</span>';
+ if(p.done) return '<span class="stat ok">เสร็จ ✓</span>';
+ const pct=p.pct||0;
+ return `<div style="display:flex;align-items:center;gap:8px">
+   <div class="pbar"><div class="pbar-fill" style="width:${pct}%"></div><span class="pbar-txt">${pct}% · ${p.stage||''}</span></div>
+   <span class="act del" title="ยกเลิก" onclick="cancelProc('${id}')">✕ ยกเลิก</span></div>`;
+}
+async function cancelProc(id){
+ const a=api(); if(!a)return;
+ await a.cancel_processing(id);
+ toast("กำลังยกเลิกการประมวลผล…");
+}
+function renderCamTable(){
+ if(!CAMERAS.length){document.getElementById("camTable").innerHTML=
+   `<tr><td colspan="7" style="text-align:center;color:var(--mut);padding:34px">ยังไม่มีกล้องในระบบ — กด “＋ เพิ่มกล้องใหม่” เพื่อเริ่ม</td></tr>`;return;}
+ document.getElementById("camTable").innerHTML=CAMERAS.map(c=>{
+   const roiN=(c.roi&&c.roi.length)?`${c.roi.length} จุด`:'—';
+   const geo=(c.lat&&c.lon)?`${(+c.lat).toFixed(4)}, ${(+c.lon).toFixed(4)}`:'—';
+   return `<tr>
+   <td><b>${c.id}</b></td><td>${c.name||'—'}</td><td class="muted">${geo}</td><td>${c.start_time||'—'}</td><td>${roiN}</td>
+   <td>${statusCell(c.id)}</td>
+   <td><span class="act" onclick="camSettings('${c.id}')">ตั้งค่า</span></td></tr>`;}).join("");
+}
+function pollProc(id){
+ const a=api(); if(!a) return;
+ const iv=setInterval(async()=>{
+   let p; try{p=await a.proc_status(id);}catch(e){return;}
+   procState[id]=p; renderCamTable();
+   if(p.done){clearInterval(iv);
+     if(p.cancelled){toast("ยกเลิกการประมวลผลแล้ว");}
+     else if(p.error){toast("ประมวลผลผิดพลาด: "+p.error);}
+     else{ if(p.data) setTracks(p.data);
+       toast(`ประมวลผลกล้องเสร็จ: พบ ${p.n} คัน (รวมทั้งระบบ ${p.total})`);}
+   }
+ },1200);
+}
+
+/* ============ ADD CAMERA WIZARD ============ */
+let addState={},addIdx=0,pinmap=null,roiPts=[];
+const FRAMES={"10":"img/frame_cam10.jpg","12":"img/frame_cam12.jpg","13":"img/frame_cam13.jpg"};
+function openAddCam(){addState={file:null,name:"",lat:16.4288,lon:102.835,frameCam:"10",ts:null,roi:[]};
+ addIdx=0;roiPts=[];document.getElementById("addOverlay").classList.add("on");renderAddStep();}
+function closeAddCam(){document.getElementById("addOverlay").classList.remove("on");if(pinmap){pinmap.remove();pinmap=null;}}
+const ADD_STEPS=["เลือกไฟล์","ชื่อกล้อง","ปักหมุดพิกัด","เฟรมแรก + OCR + ROI","ยืนยัน"];
+function renderAddStep(){
+ document.getElementById("addStepLabel").textContent=`ขั้นที่ ${addIdx+1} จาก 5`;
+ document.getElementById("addSteps").innerHTML=ADD_STEPS.map((s,i)=>
+  `<div class="stepb ${i===addIdx?'on':(i<addIdx?'done':'')}"><span class="num">${i<addIdx?'✓':i+1}</span>${s}</div>`).join("");
+ document.getElementById("addBack").style.visibility=addIdx===0?"hidden":"visible";
+ document.getElementById("addNext").textContent=addIdx===4?"บันทึก + เริ่มประมวลผล":"ถัดไป";
+ const b=document.getElementById("addStepBody");
+ if(addIdx===0){
+   b.innerHTML=`<div class="field"><label>ไฟล์วิดีโอจากกล้อง (อ่านแบบอ้างอิง path ไม่คัดลอกไฟล์)</label>
+     <div class="filebox ${addState.file?'has':''}" onclick="pickFile()">
+       ${addState.file?`<b>${addState.file}</b><br><span class="muted">${addState.fileInfo?`${addState.fileInfo.res} · ${addState.fileInfo.fps} fps · ${addState.fileInfo.duration} · ${addState.fileInfo.size_gb} GB`:'1920×1080 · 24 fps · ความยาว 11:54:01 · 13.8 GB'}</span>`
+        :`คลิกเพื่อเลือกไฟล์วิดีโอ (.mp4)<br><span class="muted">เช่น data/videos/cam10.mp4</span>`}</div></div>`;
+ }else if(addIdx===1){
+   b.innerHTML=`<div class="field"><label>ชื่อ/ตำแหน่งติดตั้งกล้อง</label>
+     <input type="text" id="camName" value="${addState.name}" placeholder="เช่น หน้าตลาดสด (ถ.กลางเมือง)" oninput="addState.name=this.value">
+     <div class="pin-help">ชื่อนี้จะแสดงใน sidebar และบนแผนที่</div></div>`;
+   setTimeout(()=>document.getElementById("camName").focus(),50);
+ }else if(addIdx===2){
+   b.innerHTML=`<div class="field"><label>ปักหมุดตำแหน่งกล้องบนแผนที่</label><div id="pinmap"></div>
+     <div class="latlon"><input id="latI" value="${addState.lat}" oninput="addState.lat=+this.value">
+       <input id="lonI" value="${addState.lon}" oninput="addState.lon=+this.value"></div>
+     <div class="pin-help">คลิกบนแผนที่เพื่อปักหมุด หรือแก้เลข lat/lon เองได้</div></div>`;
+   setTimeout(initPinMap,80);
+ }else if(addIdx===3){
+   b.innerHTML=`<div class="field"><label>เฟรมแรกจากคลิป — ระบบอ่านเวลาอัตโนมัติ + วาดโซน ROI</label>
+     <div class="framewrap" id="framewrap"><img src="${FRAMES[addState.frameCam]}" id="frameImg">
+       <svg id="roiSvg"></svg><div class="tsbox" id="tsbox"></div><div class="tslabel" id="tslabel"></div></div>
+     <div style="display:flex;gap:14px;align-items:center;margin-top:12px;flex-wrap:wrap">
+       <div style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:7px 11px;display:flex;align-items:center;gap:8px">OCR เวลาเริ่มคลิป:
+         <input id="ocrVal" style="border:1px solid var(--line);border-radius:7px;padding:5px 9px;font:inherit;font-weight:700;width:200px" placeholder="YYYY/MM/DD HH:MM:SS" oninput="addState.ts=this.value"></div>
+       <div style="color:var(--mut)">วาด ROI: คลิกบนภาพเพื่อปักมุมโซนถนน (<b><span id="roiCount">0</span></b> จุด)</div>
+       <button class="chip" onclick="clearRoi()">ล้าง ROI</button></div>`;
+   setTimeout(setupFrame,80);
+ }else{
+   const roiTxt=roiPts.length>=3?`${roiPts.length} จุด`:'<span style="color:var(--red)">ยังไม่ได้วาด</span>';
+   b.innerHTML=`<div class="summary">
+     <div><span>ไฟล์วิดีโอ</span><b>${addState.file||'cam_new.mp4'}</b></div>
+     <div><span>ชื่อกล้อง</span><b>${addState.name||'(ยังไม่ตั้งชื่อ)'}</b></div>
+     <div><span>พิกัด</span><b>${(+addState.lat).toFixed(5)}, ${(+addState.lon).toFixed(5)}</b></div>
+     <div><span>เวลาเริ่มคลิป (OCR)</span><b>${addState.ts||'2026/04/05 07:14:55'}</b></div>
+     <div><span>โซน ROI</span><b>${roiTxt}</b></div>
+     <div><span>ประมวลผล</span><b>detect → track → ROI filter → embedding</b></div></div>
+   <div class="hint" style="margin-top:14px">กดบันทึก: ระบบจะเก็บ path + เมตาดาต้าลง DB แล้วประมวลผลเบื้องหลัง (detect → track → Re-ID)</div>`;
+ }
+}
+async function pickFile(){
+ if(window.pywebview&&window.pywebview.api&&window.pywebview.api.choose_video){
+   const info=await window.pywebview.api.choose_video();
+   if(!info)return;
+   if(info.error){toast(info.error);return;}
+   addState.file=info.name;addState.fileInfo=info;addState.realPath=info.path;
+   renderAddStep();toast("เลือกไฟล์: "+info.name+" (อ้างอิง path ไม่คัดลอก)");
+ }else{
+   addState.file="cam_new.mp4";addState.fileInfo=null;addState.realPath=null;
+   renderAddStep();toast("เลือกไฟล์ (จำลอง) — อ่านแบบอ้างอิง ไม่คัดลอก");
+ }
+}
+function initPinMap(){if(pinmap)pinmap.remove();
+ pinmap=L.map("pinmap").setView([addState.lat,addState.lon],15);
+ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(pinmap);
+ let mk=L.marker([addState.lat,addState.lon],{draggable:true}).addTo(pinmap);
+ const setll=(la,lo)=>{addState.lat=la;addState.lon=lo;
+   document.getElementById("latI").value=la.toFixed(6);document.getElementById("lonI").value=lo.toFixed(6);};
+ mk.on("dragend",()=>{const ll=mk.getLatLng();setll(ll.lat,ll.lng);});
+ pinmap.on("click",e=>{mk.setLatLng(e.latlng);setll(e.latlng.lat,e.latlng.lng);});
+ setTimeout(()=>pinmap.invalidateSize(),120);
+}
+function setupFrame(){
+ const wrap=document.getElementById("framewrap"),box=document.getElementById("tsbox"),lab=document.getElementById("tslabel");
+ let ts={x:0.022,y:0.03,w:0.225,h:0.075};
+ const place=()=>{const W=wrap.clientWidth,H=wrap.clientHeight;
+   box.style.left=ts.x*W+"px";box.style.top=ts.y*H+"px";box.style.width=ts.w*W+"px";box.style.height=ts.h*H+"px";
+   lab.style.left=ts.x*W+"px";lab.style.top=(ts.y*H-20)+"px";lab.textContent="OCR timestamp";};
+ const a=api();
+ if(a&&addState.realPath){
+   // เฟรมจริง + OCR จริง
+   a.first_frame(addState.realPath).then(d=>{if(d){const im=document.getElementById("frameImg");if(im)im.src=d;}});
+   const ov=document.getElementById("ocrVal"); ov.value="กำลังอ่าน…";
+   a.read_timestamp(addState.realPath).then(r=>{
+     if(r&&r.ok){addState.ts=r.datetime; ov.value=r.datetime;
+       if(r.box){ts={x:r.box.x,y:r.box.y,w:r.box.w,h:r.box.h};addState.tsBox=r.box;} place();}
+     else{ov.value=""; ov.placeholder="OCR อ่านไม่ได้ — กรอกเอง (YYYY/MM/DD HH:MM:SS)";
+       toast((r&&r.error)||"OCR อ่านไม่ได้ กรอกเอง");}
+   }).catch(()=>{ov.value="";});
+ }else{
+   addState.ts="2026/04/05 07:14:55";
+   setTimeout(()=>{const ov=document.getElementById("ocrVal");if(ov)ov.value=addState.ts;},300);
+ }
+ setTimeout(place,300);
+ window.addEventListener("resize",place);
+ roiPts=[];addState.roi=[];document.getElementById("roiSvg").innerHTML="";
+ wrap.onclick=(e)=>{const r=wrap.getBoundingClientRect();
+   roiPts.push([(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height]);addState.roi=roiPts;drawRoi();};
+ drawRoi();
+}
+function drawRoi(){const svg=document.getElementById("roiSvg");if(!svg)return;
+ const W=svg.clientWidth,H=svg.clientHeight,pts=roiPts.map(p=>[p[0]*W,p[1]*H]);let s="";
+ if(pts.length>=2)s+=`<polygon points="${pts.map(p=>p.join(",")).join(" ")}" fill="rgba(47,111,237,.18)" stroke="#2f6fed" stroke-width="2"/>`;
+ pts.forEach(p=>s+=`<circle cx="${p[0]}" cy="${p[1]}" r="5" fill="#2f6fed" stroke="#fff" stroke-width="2"/>`);
+ svg.innerHTML=s;const rc=document.getElementById("roiCount");if(rc)rc.textContent=roiPts.length;}
+function clearRoi(){roiPts=[];addState.roi=[];drawRoi();}
+async function addStep(dir){
+ if(dir>0){
+   if(addIdx===0&&!addState.file){toast("กรุณาเลือกไฟล์วิดีโอ");return;}
+   if(addIdx===1&&!addState.name.trim()){toast("กรุณาตั้งชื่อกล้อง");return;}
+   if(addIdx===3&&roiPts.length<3){toast("วาด ROI อย่างน้อย 3 จุด");return;}
+ }
+ if(addIdx===4&&dir>0){
+   const cam={name:addState.name,lat:+addState.lat,lon:+addState.lon,
+     video_path:addState.realPath||addState.file||"",start_time:addState.ts||"",
+     roi:addState.roi||[],ts_box:addState.tsBox||null};
+   const a=api();
+   if(a){cam.id=await a.add_camera(cam);}else{cam.id="CAM-"+Date.now();}
+   CAMERAS.push(cam);
+   closeAddCam();
+   if(a){
+     procState[cam.id]=0; renderCamTable();
+     await a.start_processing(cam.id); pollProc(cam.id);   // background — ไม่ block UI
+     toast("เริ่มประมวลผลกล้อง "+addState.name+" (ดู % ที่คอลัมน์สถานะ)");
+   }else{renderCamTable();toast("เพิ่มกล้องแล้ว (เบราว์เซอร์: ข้ามการประมวลผล)");}
+   renderSideCams();
+   if(document.getElementById("page-dash").classList.contains("on"))dash();
+   return;
+ }
+ addIdx=Math.max(0,Math.min(4,addIdx+dir));renderAddStep();
+}
+
+/* ============ INIT ============ */
+renderSideCams();buildFilters();renderCamTable();dash();
+// โหลดกล้อง/เส้นทางจาก DB (เดสก์ท็อป) เมื่อ pywebview พร้อม
+if(window.pywebview&&window.pywebview.api){loadState();}
+else{window.addEventListener("pywebviewready",loadState);}
+</script>
+</body>
+</html>
